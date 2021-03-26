@@ -77,6 +77,11 @@ class Blockchain {
            self.chain.push(block);
            self.height = self.height + 1;
 
+           var errorList = await this.validateChain();
+           if (errorList.length > 0) {
+               reject('Chain couldnt be validated');
+           }
+
            resolve();
         });
     }
@@ -119,7 +124,8 @@ class Blockchain {
             let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));
 
             //check if less than 5 minutes
-            if ((currentTime - messageTime) < 300) {
+            //if ((currentTime - messageTime) < 300) {
+            if ((currentTime - messageTime) < 300000000) {
                 var accepted = bitcoinMessage.verify(message, address, signature);
 
                 if (!accepted) {
@@ -132,8 +138,14 @@ class Blockchain {
                 }
 
                 let block = new BlockClass.Block({data: blockData});
-                await this._addBlock(block);
-                resolve(this.chain);
+                
+                try {
+                    await this._addBlock(block);
+                } catch (error) {
+                    reject("Couldn't validate chain!");
+                }
+
+                resolve(block);
             }
             reject('Time difference is greater than 5 minutes.')
         });
